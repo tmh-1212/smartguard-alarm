@@ -5,7 +5,6 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 
-// Firebase Admin initialization
 try {
   admin.initializeApp();
 } catch (e) {
@@ -14,32 +13,38 @@ try {
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
-// 1. Webhook endpoint for Telegram Bot updates (1-Tap Start linking)
+// Webhook for Telegram Bot updates
 app.post("/bot-webhook", async (req, res) => {
   try {
     const update = req.body;
     if (update.message && update.message.text) {
-      const text = update.message.text;
+      const text = update.message.text.trim();
       const chatId = update.message.chat.id.toString();
       const firstName = update.message.from.first_name || "User";
 
+      // 1. When user taps /start
       if (text.startsWith("/start")) {
-        const parts = text.split(" ");
-        if (parts.length > 1) {
-          const userId = parts[1]; // e.g. user_at_gmail_com
-          
-          // Save chatId to Firestore at users/{userId}
-          await admin.firestore().collection("users").doc(userId).set({
-            telegramChatId: chatId
-          }, { merge: true });
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: chatId,
+          text: `🤖 *Welcome to SmartGuard Alarm, ${firstName}!*\n\nPlease reply to this chat with your account email address (e.g. \`your_email@gmail.com\`) to instantly link your device to Telegram.`,
+          parse_mode: "Markdown"
+        });
+      } 
+      // 2. When user replies with their email
+      else if (text.includes("@") && text.includes(".")) {
+        const email = text.toLowerCase();
+        const userId = email.replace(/[@.]/g, (c) => (c === "@" ? "_at_" : "_dot_"));
 
-          // Send confirmation message to user on Telegram
-          await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: chatId,
-            text: `✅ *SmartGuard Alarm Connected!*\n\nHello ${firstName}, your Telegram has been successfully linked to your device. You will now receive instant intruder alerts here!`,
-            parse_mode: "Markdown"
-          });
-        }
+        // Save chatId to Firestore at users/{userId}
+        await admin.firestore().collection("users").doc(userId).set({
+          telegramChatId: chatId
+        }, { merge: true });
+
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: chatId,
+          text: `✅ *Successfully Connected!*\n\nYour Telegram is now securely linked to your SmartGuard Alarm account (${email}). You will receive instant intruder alerts here!`,
+          parse_mode: "Markdown"
+        });
       }
     }
     res.status(200).send("OK");
@@ -49,7 +54,7 @@ app.post("/bot-webhook", async (req, res) => {
   }
 });
 
-// 2. Alert endpoint for Android app
+// Alert endpoint for Android app
 app.post("/alert", async (req, res) => {
   try {
     const { message, deviceName, chatId } = req.body;
