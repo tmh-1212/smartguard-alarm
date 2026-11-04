@@ -1,0 +1,4 @@
+- `[x]` Implement `MotionAntiTheftService.kt` with accelerometer and light sensor
+- `[x]` Implement `MotionVerifyActivity.kt` with 15-second countdown, PIN, and BiometricPrompt
+- `[x]` Update `AntiTheftScreen.kt` to add Motion Anti-Theft toggle
+- `[x]` Run build and verify correctness

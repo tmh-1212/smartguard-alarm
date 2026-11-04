@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SmartGuard Alarm</string>
+    <string name="accessibility_service_description">SmartGuard Alarm Anti-Theft monitors unlock interactions to capture intruder photos upon unauthorized access.</string>
+</resources>

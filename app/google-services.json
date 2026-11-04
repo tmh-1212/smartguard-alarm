@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "751781465999",
+    "project_id": "smartguard-alarm",
+    "storage_bucket": "smartguard-alarm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:751781465999:android:b644923cea7e71def185fa",
+        "android_client_info": {
+          "package_name": "com.example.myalarmapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfdgMrAcpZVOOQEltdIQr_Q5FUmvgq8JE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

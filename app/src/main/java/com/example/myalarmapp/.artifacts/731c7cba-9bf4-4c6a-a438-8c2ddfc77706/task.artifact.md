@@ -1,0 +1,4 @@
+- `[ ]` Add `isMotionDetectionEnabled` to `SecurityPreferences.kt`
+- `[ ]` Implement `MotionDetectorService.kt` with accelerometer listener
+- `[ ]` Add UI toggle in `AntiTheftScreen.kt`
+- `[ ]` Run build verification (`app:assembleDebug`)
