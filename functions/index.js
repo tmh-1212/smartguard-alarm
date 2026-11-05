@@ -15,7 +15,7 @@ try {
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const DEFAULT_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// 1. Webhook endpoint for Telegram Bot updates (1-Tap Start linking)
+// Webhook for Telegram Bot updates
 app.post("/bot-webhook", async (req, res) => {
   try {
     const update = req.body;
@@ -24,25 +24,43 @@ app.post("/bot-webhook", async (req, res) => {
       const chatId = update.message.chat.id.toString();
       const firstName = update.message.from.first_name || "User";
 
+      // 1. When user sends /start (with or without userId)
       if (text.startsWith("/start")) {
         const parts = text.split(" ");
         if (parts.length > 1) {
           const userId = parts[1]; // e.g. dev_12345...
           
-          // Save chatId to Firestore at users/{userId}
           await admin.firestore().collection("users").doc(userId).set({
             telegramChatId: chatId
           }, { merge: true });
 
-          // Send confirmation message to user on Telegram
-          if (TELEGRAM_BOT_TOKEN) {
-            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-              chat_id: chatId,
-              text: `✅ *SmartGuard Alarm Connected successfully!*\n\nHello ${firstName}, your Telegram has been successfully linked to your device. You will now receive instant intruder alerts here!`,
-              parse_mode: "Markdown"
-            });
-          }
+          await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: chatId,
+            text: `✅ *SmartGuard Alarm Connected successfully!*\n\nHello ${firstName}, your Telegram has been successfully linked to your device.`,
+            parse_mode: "Markdown"
+          });
+        } else {
+          // Plain /start without parameters
+          await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: chatId,
+            text: `🤖 *Welcome to SmartGuard Alarm, ${firstName}!*\n\nPlease tap the "Connect with Telegram" button inside your app, OR reply here with your Account Email or Device ID to link instantly.`,
+            parse_mode: "Markdown"
+          });
         }
+      } 
+      // 2. When user replies with their email or deviceId directly to the bot
+      else if (text.includes("@") || text.startsWith("dev_")) {
+        const userId = text.toLowerCase().replace(/[@.]/g, (c) => (c === "@" ? "_at_" : "_dot_"));
+        
+        await admin.firestore().collection("users").doc(userId).set({
+          telegramChatId: chatId
+        }, { merge: true });
+
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: chatId,
+          text: `✅ *Successfully Connected!*\n\nYour Telegram is now linked to account: \`${text}\`.`,
+          parse_mode: "Markdown"
+        });
       }
     }
     res.status(200).send("OK");
@@ -52,7 +70,7 @@ app.post("/bot-webhook", async (req, res) => {
   }
 });
 
-// 2. Alert endpoint for Android app
+// Alert endpoint for Android app
 app.post("/alert", async (req, res) => {
   try {
     const { message, deviceName, chatId } = req.body;
