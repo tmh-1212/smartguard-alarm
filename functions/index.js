@@ -5,7 +5,6 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 
-// Firebase Admin initialization
 try {
   admin.initializeApp();
 } catch (e) {
@@ -24,41 +23,27 @@ app.post("/bot-webhook", async (req, res) => {
       const chatId = update.message.chat.id.toString();
       const firstName = update.message.from.first_name || "User";
 
-      // 1. When user sends /start (with or without userId)
+      // 1. When user sends /start
       if (text.startsWith("/start")) {
-        const parts = text.split(" ");
-        if (parts.length > 1) {
-          const userId = parts[1]; // e.g. dev_12345...
-          
-          await admin.firestore().collection("users").doc(userId).set({
-            telegramChatId: chatId
-          }, { merge: true });
-
-          await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: chatId,
-            text: `✅ *SmartGuard Alarm Connected successfully!*\n\nHello ${firstName}, your Telegram has been successfully linked to your device.`,
-            parse_mode: "Markdown"
-          });
-        } else {
-          // Plain /start without parameters
-          await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: chatId,
-            text: `🤖 *Welcome to SmartGuard Alarm, ${firstName}!*\n\nPlease tap the "Connect with Telegram" button inside your app, OR reply here with your Account Email or Device ID to link instantly.`,
-            parse_mode: "Markdown"
-          });
-        }
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: chatId,
+          text: `🤖 *Welcome to SmartGuard Alarm, ${firstName}!*\n\nPlease send the 6-character *Pairing Code* shown inside your app to link your device instantly.`,
+          parse_mode: "Markdown"
+        });
       } 
-      // 2. When user replies with their email or deviceId directly to the bot
-      else if (text.includes("@") || text.startsWith("dev_")) {
-        const userId = text.toLowerCase().replace(/[@.]/g, (c) => (c === "@" ? "_at_" : "_dot_"));
+      // 2. When user sends the pairing code (e.g. A8B9C2)
+      else if (text.length >= 4 && text.length <= 10) {
+        const pairingCode = text.toUpperCase();
         
-        await admin.firestore().collection("users").doc(userId).set({
-          telegramChatId: chatId
+        // Save chatId to Firestore under pairing_codes/{code}
+        await admin.firestore().collection("pairing_codes").doc(pairingCode).set({
+          telegramChatId: chatId,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           chat_id: chatId,
-          text: `✅ *Successfully Connected!*\n\nYour Telegram is now linked to account: \`${text}\`.`,
+          text: `✅ *Successfully Connected!*\n\nYour code \`${pairingCode}\` is now linked. You can return to your app!`,
           parse_mode: "Markdown"
         });
       }
