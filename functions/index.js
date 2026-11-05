@@ -5,10 +5,13 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 
+// Firebase Admin initialization with explicit project ID "smartguard-alarm"
 try {
-  admin.initializeApp();
+  admin.initializeApp({
+    projectId: "smartguard-alarm"
+  });
 } catch (e) {
-  console.log("Firebase initialized");
+  console.log("Firebase already initialized");
 }
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -31,7 +34,7 @@ app.post("/bot-webhook", async (req, res) => {
           parse_mode: "Markdown"
         });
       } 
-      // 2. When user sends the pairing code (e.g. A8B9C2)
+      // 2. When user sends the pairing code (e.g. 414FA6)
       else if (text.length >= 4 && text.length <= 10) {
         const pairingCode = text.toUpperCase();
         
